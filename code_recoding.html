@@ -1,0 +1,3563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代码记录整理稿</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06101c;
+      --bg-deep: #0c1d31;
+      --paper: rgba(7, 18, 31, 0.9);
+      --paper-solid: #091521;
+      --line: rgba(110, 228, 255, 0.14);
+      --line-strong: rgba(110, 228, 255, 0.24);
+      --ink: #e8f8ff;
+      --muted: #8da9bb;
+      --accent: #58efff;
+      --accent-strong: #b2fbff;
+      --accent-soft: rgba(88, 239, 255, 0.14);
+      --blue-soft: rgba(56, 189, 248, 0.16);
+      --violet-soft: rgba(99, 102, 241, 0.12);
+      --shadow: 0 20px 56px rgba(0, 0, 0, 0.34);
+      --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.22);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --toolbar-gap: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scrollbar-gutter: stable;
+    }
+
+    ::selection {
+      color: #04141a;
+      background: rgba(88, 239, 255, 0.34);
+    }
+
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      line-height: 1.8;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(88, 239, 255, 0.14) 0, rgba(88, 239, 255, 0) 28%),
+        radial-gradient(circle at 82% 12%, rgba(99, 102, 241, 0.11) 0, rgba(99, 102, 241, 0) 26%),
+        linear-gradient(180deg, #030913 0%, #071324 45%, #02070e 100%);
+      min-height: 100vh;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.45;
+      filter: blur(28px);
+    }
+
+    body::before {
+      top: 72px;
+      left: -48px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(56, 189, 248, 0.06) 54%, rgba(56, 189, 248, 0) 78%);
+    }
+
+    body::after {
+      right: -12px;
+      bottom: 12px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(34, 211, 238, 0.08) 48%, rgba(34, 211, 238, 0) 76%);
+    }
+
+    body.is-editing {
+      --line: rgba(123, 243, 255, 0.24);
+      --line-strong: rgba(123, 243, 255, 0.42);
+      --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    .page {
+      position: relative;
+      width: min(1280px, calc(100% - 28px));
+      margin: 18px auto 32px;
+      padding: 20px;
+      border: 1px solid rgba(110, 228, 255, 0.12);
+      border-radius: 32px;
+      background: linear-gradient(180deg, rgba(5, 15, 27, 0.9) 0%, rgba(5, 11, 20, 0.84) 100%);
+      box-shadow: var(--shadow);
+      overflow: clip;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        linear-gradient(180deg, rgba(88, 239, 255, 0.06), rgba(88, 239, 255, 0) 16%),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 20%);
+      pointer-events: none;
+    }
+
+    .page::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(88, 239, 255, 0.025) 0 1px,
+        transparent 1px 28px
+      );
+      opacity: 0.36;
+      pointer-events: none;
+    }
+
+    .toolbar-shell {
+      margin-bottom: 18px;
+    }
+
+    .editor-toolbar {
+      display: grid;
+      gap: var(--toolbar-gap);
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(8, 23, 38, 0.96) 0%, rgba(7, 17, 29, 0.94) 100%);
+      box-shadow: var(--shadow-soft);
+    }
+
+      .toolbar-copy {
+        display: flex;
+        align-items: start;
+        gap: 14px;
+        justify-content: space-between;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 88px;
+      height: 62px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+      flex: none;
+    }
+
+    .toolbar-copy strong {
+      display: block;
+      font-size: 1.05rem;
+      color: #f4fdff;
+    }
+
+    .toolbar-kicker {
+      margin: 0;
+      font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .toolbar-note {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .toolbar-context {
+      margin: 0;
+      max-width: 24rem;
+      padding: 0.78rem 0.9rem;
+      border: 1px solid rgba(110, 228, 255, 0.14);
+      border-radius: 16px;
+      background: rgba(7, 20, 33, 0.68);
+      color: var(--accent-strong);
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.6;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .search-box {
+      display: grid;
+      gap: 0.35rem;
+      min-width: min(320px, 100%);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .search-box input {
+      width: min(320px, 100%);
+      min-height: 44px;
+      padding: 0.72rem 0.88rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 14px;
+      background: rgba(6, 19, 32, 0.96);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    .search-box input:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px rgba(88, 239, 255, 0.1);
+      background: rgba(8, 24, 40, 0.98);
+    }
+
+    .editor-toolbar button {
+      min-height: 44px;
+      padding: 0.72rem 0.95rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(10, 30, 50, 0.94), rgba(13, 24, 42, 0.92));
+      color: #f4fdff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    .editor-toolbar button.is-primary {
+      background: linear-gradient(135deg, rgba(10, 66, 108, 0.96), rgba(20, 101, 175, 0.94));
+      border-color: rgba(123, 243, 255, 0.26);
+    }
+
+    .editor-toolbar button:hover,
+    .editor-toolbar button:focus-visible {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+      outline: none;
+    }
+
+    .editor-toolbar button[disabled] {
+      opacity: 0.48;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .edit-only {
+      display: none;
+    }
+
+    body.is-editing .edit-only {
+      display: inline-flex;
+    }
+
+    .toolbar-status {
+      margin: 0;
+      padding: 0.72rem 0.9rem;
+      border-radius: 14px;
+      border: 1px solid rgba(110, 228, 255, 0.12);
+      background: rgba(6, 19, 32, 0.72);
+      color: var(--accent-strong);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .toolbar-status[data-tone="dirty"] {
+      color: #ffe29c;
+      border-color: rgba(250, 204, 21, 0.2);
+      background: rgba(68, 49, 8, 0.36);
+    }
+
+    .toolbar-status[data-tone="success"] {
+      color: #bfffe1;
+      border-color: rgba(34, 197, 94, 0.22);
+      background: rgba(8, 49, 31, 0.34);
+    }
+
+    .toolbar-status[data-tone="warning"] {
+      color: #ffd9b6;
+      border-color: rgba(249, 115, 22, 0.22);
+      background: rgba(69, 28, 7, 0.34);
+    }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+      gap: 22px;
+      padding: 30px 32px;
+      border: 1px solid rgba(110, 228, 255, 0.14);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(145deg, rgba(9, 21, 37, 0.94) 0%, rgba(8, 29, 51, 0.9) 44%, rgba(8, 18, 35, 0.96) 100%);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+      overflow: hidden;
+      isolation: isolate;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(88, 239, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(rgba(88, 239, 255, 0.045) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 94%);
+      z-index: -1;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -12% -28% auto;
+      width: 300px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(88, 239, 255, 0.14) 0%, rgba(56, 189, 248, 0.08) 44%, rgba(88, 239, 255, 0) 76%);
+      transform: rotate(-14deg);
+      pointer-events: none;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.3rem, 5vw, 4.2rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: #f4fdff;
+      text-shadow: 0 0 18px rgba(88, 239, 255, 0.05);
+    }
+
+    .lede {
+      max-width: 46rem;
+      margin: 0;
+      font-size: 1.04rem;
+      color: var(--muted);
+    }
+
+    .hero-note {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.55rem 0.9rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(6, 31, 50, 0.86), rgba(10, 20, 39, 0.82));
+      color: #d7fbff;
+      font-size: 0.95rem;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    .hero-meta {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stat-card {
+      padding: 16px 18px 15px;
+      border: 1px solid rgba(110, 228, 255, 0.1);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(10, 22, 38, 0.86) 0%, rgba(7, 22, 39, 0.8) 100%);
+      box-shadow: var(--shadow-soft);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .stat-card span {
+      display: block;
+      margin-bottom: 0.45rem;
+      font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #8fdfff;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      font-size: 1.18rem;
+      line-height: 1.3;
+      color: #f3fcff;
+    }
+
+    .summary {
+      margin-top: 18px;
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(7, 18, 31, 0.92) 0%, rgba(5, 15, 28, 0.88) 100%);
+      box-shadow: var(--shadow-soft);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .summary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: #e6f8ff;
+    }
+
+    .summary-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid rgba(110, 228, 255, 0.14);
+      background: linear-gradient(135deg, rgba(88, 239, 255, 0.12), rgba(99, 102, 241, 0.14));
+      color: #b9f8ff;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .summary p {
+      margin: 0.65rem 0 0;
+      color: var(--muted);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 250px 290px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-top: 22px;
+    }
+
+    .project-sidebar,
+    .file-sidebar,
+    .editor-pane {
+      min-width: 0;
+    }
+
+    .panel-card {
+      padding: 20px 18px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(7, 18, 31, 0.92) 0%, rgba(5, 15, 28, 0.88) 100%);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel-card + .panel-card {
+      margin-top: 18px;
+    }
+
+    .panel-scroll {
+      max-height: calc(100vh - 290px);
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+
+    .panel-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .panel-tools button {
+      min-height: 40px;
+      padding: 0.6rem 0.82rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(10, 30, 50, 0.92), rgba(11, 23, 41, 0.9));
+      color: #f4fdff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .panel-tools button:hover,
+    .panel-tools button:focus-visible {
+      border-color: var(--line-strong);
+      outline: none;
+    }
+
+    .context-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .context-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.15rem;
+      padding: 0.45rem 0.78rem;
+      border: 1px solid rgba(110, 228, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(7, 21, 35, 0.78);
+      color: var(--accent-strong);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .project-list,
+    .file-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .project-row,
+    .file-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .project-card,
+    .file-card,
+    .row-delete {
+      border: 1px solid rgba(110, 228, 255, 0.12);
+      border-radius: 14px;
+      background: rgba(8, 23, 38, 0.86);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .project-card,
+    .file-card {
+      width: 100%;
+      padding: 0.88rem 0.94rem;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .project-card strong,
+    .file-card strong {
+      display: block;
+      margin-bottom: 0.18rem;
+      color: #f5fdff;
+      font-size: 0.96rem;
+    }
+
+    .project-card span,
+    .project-card small,
+    .file-card span,
+    .file-card small {
+      display: block;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .project-card.is-active,
+    .file-card.is-active {
+      border-color: rgba(123, 243, 255, 0.28);
+      background: linear-gradient(135deg, rgba(12, 46, 74, 0.92), rgba(16, 31, 55, 0.9));
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .row-delete {
+      min-width: 42px;
+      padding: 0 0.78rem;
+      cursor: pointer;
+      color: #ffd2cb;
+      background: rgba(57, 19, 23, 0.68);
+    }
+
+    .row-delete:hover,
+    .row-delete:focus-visible,
+    .project-card:hover,
+    .project-card:focus-visible,
+    .file-card:hover,
+    .file-card:focus-visible {
+      border-color: var(--line-strong);
+      outline: none;
+    }
+
+    .editor-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+    }
+
+    .toc-card {
+      padding: 22px 18px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(7, 18, 31, 0.92) 0%, rgba(5, 15, 28, 0.88) 100%);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .toc-card h2 {
+      margin: 0.15rem 0 0.85rem;
+      font-size: 1.25rem;
+    }
+
+    .toc-label {
+      margin: 0;
+      font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .toc-copy {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .toc nav {
+      display: grid;
+      gap: 0.55rem;
+      max-height: calc(100vh - 170px);
+      overflow: auto;
+      padding-right: 0.15rem;
+      overscroll-behavior: contain;
+    }
+
+    .toc nav::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .toc nav::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(88, 239, 255, 0.58), rgba(99, 102, 241, 0.48)) padding-box;
+    }
+
+    .toc nav::-webkit-scrollbar-track {
+      background: rgba(5, 15, 28, 0.2);
+    }
+
+    .toc a {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.68rem 0.82rem;
+      border: 1px solid rgba(110, 228, 255, 0.08);
+      border-radius: 14px;
+      color: var(--ink);
+      text-decoration: none;
+      background: linear-gradient(135deg, rgba(7, 24, 42, 0.82), rgba(8, 18, 33, 0.72));
+      transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+    }
+
+    .toc a::before {
+      content: "";
+      width: 0.58rem;
+      height: 0.58rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #58efff 0%, #7c3aed 100%);
+      box-shadow: 0 0 0 4px rgba(88, 239, 255, 0.08);
+      flex: none;
+    }
+
+    .toc a:hover,
+    .toc a:focus-visible,
+    .toc a.is-active {
+      color: #ffffff;
+      border-color: rgba(110, 228, 255, 0.2);
+      background: linear-gradient(135deg, rgba(10, 43, 72, 0.94), rgba(14, 29, 53, 0.88));
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      outline: none;
+    }
+
+    .toc a.is-hidden {
+      display: none;
+    }
+
+    .entries {
+      position: relative;
+      display: grid;
+      gap: 18px;
+      padding-left: 28px;
+      align-content: start;
+    }
+
+    .entries::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(88, 239, 255, 0.3) 0%, rgba(56, 189, 248, 0.22) 45%, rgba(124, 58, 237, 0.18) 100%);
+      box-shadow: 0 0 14px rgba(88, 239, 255, 0.08);
+    }
+
+    .entry {
+      position: relative;
+      padding: 22px 22px 18px;
+      border: 1px solid rgba(110, 228, 255, 0.12);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at top right, rgba(88, 239, 255, 0.1), rgba(88, 239, 255, 0) 34%),
+        linear-gradient(180deg, rgba(7, 18, 31, 0.95) 0%, rgba(5, 14, 26, 0.93) 100%);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      scroll-margin-top: 24px;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+      content-visibility: auto;
+      contain-intrinsic-size: 360px;
+      contain: layout paint style;
+    }
+
+    .entry::before {
+      content: "";
+      position: absolute;
+      left: -28px;
+      top: 26px;
+      width: 14px;
+      height: 14px;
+      border: 4px solid #06111d;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #58efff 0%, #7c3aed 100%);
+      box-shadow: 0 0 0 4px rgba(88, 239, 255, 0.12);
+    }
+
+    .entry::after {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, rgba(88, 239, 255, 0.92) 0%, rgba(59, 130, 246, 0.82) 56%, rgba(124, 58, 237, 0.76) 100%);
+      opacity: 0.9;
+    }
+
+    .entry:target {
+      border-color: rgba(110, 228, 255, 0.24);
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(88, 239, 255, 0.06);
+    }
+
+    .entry.is-hidden {
+      display: none;
+    }
+
+    .entry-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+      padding-top: 4px;
+    }
+
+    .entry-label {
+      margin: 0 0 0.3rem;
+      font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.38rem;
+      letter-spacing: -0.03em;
+      color: #f3fdff;
+    }
+
+    .entry-count {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.3rem;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(10, 45, 74, 0.9), rgba(16, 34, 63, 0.84));
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .entry-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: end;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .entry-actions button,
+    .item-actions button {
+      min-height: 34px;
+      padding: 0.38rem 0.7rem;
+      border: 1px solid rgba(110, 228, 255, 0.14);
+      border-radius: 10px;
+      background: rgba(9, 25, 41, 0.82);
+      color: var(--accent-strong);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+    }
+
+    .entry-actions button:hover,
+    .entry-actions button:focus-visible,
+    .item-actions button:hover,
+    .item-actions button:focus-visible {
+      border-color: var(--line-strong);
+      background: rgba(12, 43, 70, 0.94);
+      color: #ffffff;
+      outline: none;
+    }
+
+    .entry-actions button[data-entry-action="delete-entry"],
+    .item-actions button[data-item-action="delete-item"] {
+      color: #ffd2cb;
+      border-color: rgba(248, 113, 113, 0.18);
+      background: rgba(57, 19, 23, 0.54);
+    }
+
+    .entry-actions button[data-entry-action="delete-entry"]:hover,
+    .item-actions button[data-item-action="delete-item"]:hover {
+      background: rgba(107, 27, 36, 0.78);
+      border-color: rgba(248, 113, 113, 0.34);
+    }
+
+    .entry.is-collapsed > ul {
+      display: none;
+    }
+
+    .entry.is-collapsed.is-search-open > ul {
+      display: block;
+    }
+
+    .item-row {
+      display: flex;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-actions {
+      display: none;
+      flex: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      justify-content: end;
+    }
+
+    body.is-editing .item-actions {
+      display: inline-flex;
+    }
+
+    .search-hit {
+      background: rgba(88, 239, 255, 0.09);
+      box-shadow: inset 0 0 0 1px rgba(88, 239, 255, 0.18);
+    }
+
+    .search-current {
+      background: rgba(250, 204, 21, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.28);
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.28rem;
+    }
+
+    li {
+      margin: 0.5rem 0;
+      padding-left: 0.2rem;
+    }
+
+    li::marker {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .entry > ul > li {
+      padding: 0.42rem 0.2rem;
+      border-bottom: 1px dashed rgba(88, 239, 255, 0.12);
+    }
+
+    .entry > ul > li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    ul ul {
+      margin-top: 0.65rem;
+      padding-top: 0.1rem;
+      padding-left: 1.15rem;
+      border-left: 2px solid rgba(88, 239, 255, 0.18);
+    }
+
+    ul ul li {
+      margin: 0.38rem 0;
+    }
+
+    .empty-state {
+      margin: 0;
+      padding: 18px 20px;
+      border: 1px dashed rgba(110, 228, 255, 0.2);
+      border-radius: 18px;
+      background: rgba(5, 15, 28, 0.65);
+      color: var(--muted);
+    }
+
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      height: 4px;
+      background: rgba(4, 12, 24, 0.82);
+      pointer-events: none;
+    }
+
+    .scroll-progress span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      transform-origin: left center;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, #58efff 0%, #38bdf8 40%, #7c3aed 100%);
+      box-shadow: 0 0 10px rgba(88, 239, 255, 0.24);
+    }
+
+    .back-to-top {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 24;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.74rem 0.96rem;
+      border: 1px solid rgba(110, 228, 255, 0.16);
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(8, 43, 70, 0.94), rgba(23, 63, 122, 0.9));
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: var(--shadow-soft);
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+    }
+
+    .back-to-top:hover,
+    .back-to-top:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .back-to-top.is-visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .editable-node {
+      border-radius: 10px;
+      outline: none;
+      transition: background-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    body.is-editing .editable-node {
+      cursor: text;
+    }
+
+    body.is-editing .editable-node:hover {
+      background: rgba(88, 239, 255, 0.05);
+    }
+
+    body.is-editing .editable-node:focus {
+      background: rgba(88, 239, 255, 0.08);
+      box-shadow: 0 0 0 1px rgba(88, 239, 255, 0.28), 0 0 0 5px rgba(88, 239, 255, 0.08);
+    }
+
+    body.is-editing .entry {
+      content-visibility: visible;
+      contain: none;
+    }
+
+    .reveal-ready {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 360ms ease, transform 360ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      transition-delay: var(--reveal-delay, 0ms);
+    }
+
+    .reveal-ready.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (pointer: fine) {
+      .hero:hover,
+      .summary:hover,
+      .toc-card:hover,
+      .stat-card:hover,
+      .entry:hover {
+        border-color: rgba(110, 228, 255, 0.2);
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .page {
+        width: min(100% - 18px, 100%);
+      }
+
+      .toolbar-copy,
+      .hero {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .editor-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+      }
+
+      .toc nav {
+        grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+        max-height: none;
+      }
+
+      .panel-scroll {
+        max-height: none;
+      }
+
+      .entries {
+        padding-left: 20px;
+      }
+
+      .entry::before {
+        left: -20px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 10px, 100%);
+        margin: 8px auto 16px;
+        padding: 10px;
+        border-radius: 22px;
+      }
+
+      .editor-toolbar,
+      .hero,
+      .summary,
+      .toc-card,
+      .entry {
+        border-radius: 18px;
+      }
+
+      .toolbar-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar-context {
+        max-width: none;
+      }
+
+      .search-box,
+      .search-box input {
+        width: 100%;
+      }
+
+      .search-box {
+        grid-column: 1 / -1;
+      }
+
+      .editor-toolbar button {
+        width: 100%;
+      }
+
+      .hero {
+        padding: 22px 18px;
+      }
+
+      .brand-row {
+        align-items: start;
+      }
+
+      .brand-logo {
+        width: 72px;
+        height: 52px;
+      }
+
+      h1 {
+        font-size: 2.05rem;
+      }
+
+      .summary {
+        padding: 18px;
+      }
+
+      .summary-head,
+      .entry-head {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .entries {
+        padding-left: 0;
+      }
+
+      .entries::before,
+      .entry::before {
+        display: none;
+      }
+
+      .entry {
+        padding: 18px 16px 14px;
+      }
+
+      .toc nav {
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      }
+
+      .back-to-top {
+        right: 14px;
+        bottom: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      .reveal-ready,
+      .reveal-ready.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      body::before,
+      body::after,
+      .toolbar-shell,
+      .project-sidebar,
+      .file-sidebar,
+      .toc,
+      .scroll-progress,
+      .back-to-top,
+      .empty-state {
+        display: none;
+      }
+
+      .page {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+      }
+
+      .page::before,
+      .page::after {
+        display: none;
+      }
+
+      .hero,
+      .summary,
+      .entry {
+        border: 1px solid #d6dde7;
+        box-shadow: none;
+        background: #ffffff;
+        break-inside: avoid;
+      }
+
+      .hero::before,
+      .hero::after,
+      .entry::after {
+        display: none;
+      }
+
+      .workspace {
+        display: block;
+      }
+
+      .editor-shell {
+        display: block;
+      }
+
+      .entries {
+        padding-left: 0;
+      }
+
+      .entries::before,
+      .entry::before {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
+  <main class="page">
+    <section class="toolbar-shell" aria-labelledby="workspace-title">
+      <div class="editor-toolbar">
+        <div class="toolbar-copy">
+          <div class="brand-row">
+            <img class="brand-logo" src="./mmexport1775043270498.jpg" alt="飞跃不止 虎啸长吟 项目标识">
+            <div>
+              <p class="toolbar-kicker">Workspace</p>
+              <strong id="workspace-title">企业项目记录工作台</strong>
+              <p class="toolbar-note" data-search-summary>共 1 个项目，1 个文件，当前文件含 15 段记录与 95 条要点。</p>
+            </div>
+          </div>
+          <p class="toolbar-context" data-workspace-context>当前项目：默认项目 / 当前文件：代码记录整理稿</p>
+        </div>
+        <div class="toolbar-actions">
+          <label class="search-box">
+            <span>检索</span>
+            <input data-search-input type="search" placeholder="按日期、问题或模块关键字筛选">
+          </label>
+          <button type="button" data-action="add-project">新增项目</button>
+          <button type="button" data-action="add-file">新增文件</button>
+          <button type="button" data-action="delete-file">删除文件</button>
+          <button type="button" data-action="delete-project">删除项目</button>
+          <button class="is-primary" type="button" data-action="toggle-edit" aria-pressed="false">进入编辑</button>
+          <button class="edit-only" type="button" data-action="add-entry">新增记录</button>
+          <button type="button" data-action="save-draft" disabled>保存草稿</button>
+          <button type="button" data-action="restore-draft">恢复草稿</button>
+          <button type="button" data-action="export-html">导出 HTML</button>
+          <button type="button" data-action="collapse-all">全部收起</button>
+          <button type="button" data-action="expand-all">全部展开</button>
+          <button type="button" data-action="match-prev">上一处</button>
+          <button type="button" data-action="match-next">下一处</button>
+          <button type="button" data-action="reset-page">重置页面</button>
+        </div>
+        <p class="toolbar-status" data-save-status data-tone="info" role="status" aria-live="polite">查看模式</p>
+      </div>
+    </section>
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Engineering Field Notes</p>
+        <div>
+          <h1>代码记录整理稿</h1>
+        </div>
+        <p class="lede">按时间整理的调试、控制、结构与硬件问题记录。原文内容未改写，仅进行了层级化排版与阅读体验优化。</p>
+        <div class="hero-note">保留原文表述，仅重组页面结构与视觉样式</div>
+      </div>
+      <div class="hero-meta">
+        <article class="stat-card">
+          <span>记录周期</span>
+          <strong>26.1.27 - 26.3.29</strong>
+        </article>
+        <article class="stat-card">
+          <span>日期节点</span>
+          <strong>15 段记录</strong>
+        </article>
+        <article class="stat-card">
+          <span>整理规模</span>
+          <strong>95 条要点</strong>
+        </article>
+      </div>
+    </header>
+
+    <section class="summary">
+      <div class="summary-head">
+        <h2>修改地方</h2>
+        <span class="summary-tag">原文保留</span>
+      </div>
+        <p>前面设计了大小yaw的扫描逻辑，以及将原先单个yaw的变量更改为两个yaw的变量</p>
+    </section>
+
+    <div class="workspace">
+      <aside class="project-sidebar">
+        <div class="panel-card">
+          <p class="toc-label">Projects</p>
+          <h2>项目列表</h2>
+          <p class="toc-copy" data-project-summary>按企业项目分组管理不同记录文件。</p>
+          <div class="panel-tools">
+            <button type="button" data-action="add-project">新增项目</button>
+          </div>
+        </div>
+        <div class="panel-card panel-scroll project-list" data-project-list></div>
+      </aside>
+
+      <aside class="file-sidebar">
+        <div class="panel-card">
+          <p class="toc-label">Files</p>
+          <h2 data-file-panel-title>文件树</h2>
+          <p class="toc-copy" data-file-panel-copy>当前项目下的记录文件会在这里集中管理。</p>
+          <div class="panel-tools">
+            <button type="button" data-action="add-file">新增文件</button>
+            <button type="button" data-action="delete-file">删除文件</button>
+            <button type="button" data-action="delete-project">删除项目</button>
+          </div>
+          <div class="context-pills">
+            <span class="context-pill" data-project-status>进行中</span>
+            <span class="context-pill" data-file-updated>未保存</span>
+          </div>
+        </div>
+        <div class="panel-card panel-scroll file-list" data-file-list></div>
+      </aside>
+
+      <section class="editor-pane">
+        <div class="editor-shell">
+          <aside class="toc">
+            <div class="toc-card">
+          <p class="toc-label">快速跳转</p>
+          <h2>时间目录</h2>
+          <p class="toc-copy">按日期浏览每次修改、调试和问题记录。</p>
+          <nav>
+            <a href="#d-26-1-27">26.1.27</a>
+            <a href="#d-26-1-30">26.1.30</a>
+            <a href="#d-26-1-31">26.1.31</a>
+            <a href="#d-26-2-1">26.2.1</a>
+            <a href="#d-26-3-7">26.3.7</a>
+            <a href="#d-26-3-10">26.3.10</a>
+            <a href="#d-26-3-12">26.3.12</a>
+            <a href="#d-26-3-13">26.3.13</a>
+            <a href="#d-26-3-15">26.3.15</a>
+            <a href="#d-26-3-16">26.3.16</a>
+            <a href="#d-26-3-18">26.3.18</a>
+            <a href="#d-26-3-19">26.3.19</a>
+            <a href="#d-26-3-22">26.3.22</a>
+            <a href="#d-26-3-23">26.3.23</a>
+            <a href="#d-26-3-29">26.3.29</a>
+          </nav>
+            </div>
+          </aside>
+
+          <div>
+            <section class="entries">
+        <section class="entry" id="d-26-1-27">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 01</p>
+              <h3>26.1.27</h3>
+            </div>
+            <span class="entry-count">9 条要点</span>
+          </div>
+          <ul>
+            <li>将damiao电机J4310P相应的can收发添加，以及增加相应宏定义
+            </li>
+            <li>写了自瞄云台扫描逻辑：
+            </li>
+            <li>第一种
+            <ul>
+              <li>让云台每跑一轮代码增加一定角度
+              </li>
+            </ul>
+            </li>
+            <li>第二种
+            <ul>
+              <li>让云台按照余弦角度扫描前方的区域
+              <ul>
+                <li>创立了相应的余弦正弦函数，创造角度对应的数字结构体
+                </li>
+              </ul>
+              </li>
+            </ul>
+            </li>
+            <li>能正常使damiao电机使能并且控制
+            </li>
+            <li>编写了当小yaw锁定装甲板，使得大小yaw与装甲板调整为同一直线
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-1-30">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 02</p>
+              <h3>26.1.30</h3>
+            </div>
+            <span class="entry-count">2 条要点</span>
+          </div>
+          <ul>
+            <li>将留下的旧旧自瞄全部删除Auto_aim.c  Auto_aim.h	删除其获取数据的函数以及存储的结构体
+            <ul>
+              <li>删除其调用自瞄数据，滤波以及处理的相关所有代码
+              </li>
+            </ul>
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-1-31">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 03</p>
+              <h3>26.1.31</h3>
+            </div>
+            <span class="entry-count">2 条要点</span>
+          </div>
+          <ul>
+            <li>对小yaw和pitch的PID进行调试，并且完善了之前不足的写法。
+            </li>
+            <li>pitch的扫描逻辑已经完成
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-2-1">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 04</p>
+              <h3>26.2.1</h3>
+            </div>
+            <span class="entry-count">6 条要点</span>
+          </div>
+          <ul>
+            <li>重新修改了一下自喵的结构体以及调用
+            </li>
+            <li>小yaw的扫描逻辑仍不够流畅，尝试提高余弦函数的精度是否能使yaw轴扫描时出现明显的卡顿
+            </li>
+            <li>准备添加CORDIC算法确定其余弦值和正弦值，精度范围在±0.015°左右
+            </li>
+            <li>暂时更改了rc.s[1]来调整其底盘和云台的控制
+            </li>
+            <li>CORDIC计算也并没有达到预期的效果，该函数图像仍显的卡顿，而且还会出现
+            </li>
+            <li>暂时不考虑第二种余弦角度规律扫描，暂时采取匀速扫描
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-7">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 05</p>
+              <h3>26.3.7</h3>
+            </div>
+            <span class="entry-count">6 条要点</span>
+          </div>
+          <ul>
+            <li>出现问题，现象轮子在正常控制的过程中突然失控，轮子没有力，过一段时间轮子疯转
+            </li>
+            <li>（原因：疯转是因为轮子失控过程中，误差仍在计算，当重新能正常控制时，之前多出来的误差会让轮子疯转）
+            </li>
+            <li>底盘代码出现问题，输出给电机的值正常有数，目标值正常有数，电机未被驱动
+            </li>
+            <li>电机仍有编码器传回，手动转动轮子仍有编码器速度传回，使用全向步兵底盘代码能正常控制
+            </li>
+            <li>只能将步兵的底盘代码复制到哨兵工程文件中进行调整，让哨兵底盘能正常使用
+            </li>
+            <li>因此现在的底盘代码是之前的旧全向步兵的代码，目前能正常使用
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-10">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 06</p>
+              <h3>26.3.10</h3>
+            </div>
+            <span class="entry-count">4 条要点</span>
+          </div>
+          <ul>
+            <li>出现问题，现象云台大yaw电机在开启跟随模式时，突然给一个短暂的力会导致大yaw往反向一直转动，速度逐渐加快
+            </li>
+            <li>（原因：当给一个突然的力时，会使得大yawJ4310电机接的线送，导致编码器值突然没值，导致实际值没跟新一直有误差会朝一个方向一直转动）
+            </li>
+            <li>让硬件过来将线用胶枪固定住，目前能正常使用
+            </li>
+            <li>陀螺仪的零飘现象仍然存在，会使的大yaw朝一个方向缓慢的慢慢转动，需要校准到合适的值使用
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-12">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 07</p>
+              <h3>26.3.12</h3>
+            </div>
+            <span class="entry-count">6 条要点</span>
+          </div>
+          <ul>
+            <li>更改拨盘的控制逻辑，将之前全向步兵的控制代码移植到哨兵的工程文件
+            </li>
+            <li>以及更改了控制逻辑右侧扳扭，扳至中间是单发，下方是连发
+            </li>
+            <li>通道四即左上方的旋钮控制拨盘的正转反转，下滑是正转，上滑反转
+            </li>
+            <li>之前的增量式PID有问题，已经进行了修改，现在拨盘能正常控制
+            </li>
+            <li>现准备增加姿态切换以及控制逻辑
+            </li>
+            <li>RM_system_type文件增加结构体后开始报错，明天研究哪块的问题
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-13">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 08</p>
+              <h3>26.3.13</h3>
+            </div>
+            <span class="entry-count">5 条要点</span>
+          </div>
+          <ul>
+            <li>代码的云台控制最终决定小yaw需要使用陀螺仪进行控制，发现原先的PID的控制不理想
+            </li>
+            <li>原先的小yaw限位未考虑要使用陀螺仪控制的情况，需要调节用编码器调整小yaw的左右转动
+            </li>
+            <li>需要重新修改编码器控制的逻辑
+            </li>
+            <li>期望大小yaw始终维持正对的位置是同一方向，若以初始位置或相差角度为参照，后续的角度变化均以大小yaw原先参照进行调整
+            </li>
+            <li>但小yaw的摩擦轮转动会使的小yaw的陀螺仪值偏移，相应的参照角度也会有差值，无法达到原先正对的角度
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-15">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 09</p>
+              <h3>26.3.15</h3>
+            </div>
+            <span class="entry-count">4 条要点</span>
+          </div>
+          <ul>
+            <li>原先大yaw的编码器值是-15到15之间，一圈是2Pi，因此一点转一圈后，转前转后的值不一样大。
+            </li>
+            <li>修改了位置的最大值为6.28符合一个位置一个数的逻辑（后续如果想更改位置的最大值，可以在上位机里修改）
+            </li>
+            <li>有了一一对应的数就可以实现底盘与云台的跟随效果
+            </li>
+            <li>底盘的跟随效果对于导航调车较为重要，需要调好跟随才能支持导航调节。
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-16">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 10</p>
+              <h3>26.3.16</h3>
+            </div>
+            <span class="entry-count">9 条要点</span>
+          </div>
+          <ul>
+            <li>几天出现了云台先转底盘后转的问题，如果一开始云台的初始位置和底盘相差过多当底盘能控制时会发生疯转
+            </li>
+            <li>可能原因是，因为底盘和云台的供电不是同一根线，有可能出现当底盘还没有供上电，但云台已经成功供上电并且开始转动了
+            </li>
+            <li>但底盘还没通电，因此无法及时的转动跟进，导致云台能控制但是底盘却一时半会控制不了
+            </li>
+            <li>解决办法暂时是以底盘的编码器值作为判断，当收到底盘编码器之后在开始云台和底盘task任务运行
+            </li>
+            <li>不过其他兵种的底盘与云台的供电应该是分开，暂时不清楚为什么没有出现类似的情况
+            </li>
+            <li>小yaw的限位逻辑还需要改进，限位是根据编码器值进行的限位，控制却是通过陀螺仪值进行控制的
+            </li>
+            <li>其次到限位的位置前，如果输出的电流值较大，会导致限位看起来根本没有效果
+            </li>
+            <li>因此物理限位非常有必要，防止绞线，我们只能尽量在靠近限位时降低它的速度。
+            </li>
+            <li>其次是控制的逻辑，目前想到的是在限位时维持限位位置的角度，然后通过大yaw的旋转让限位的区间移动，达到可以控制的效果
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-18">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 11</p>
+              <h3>26.3.18</h3>
+            </div>
+            <span class="entry-count">5 条要点</span>
+          </div>
+          <ul>
+            <li>解决了之前一直难以解决的大小yaw的锁板问题，加了大小yaw共线的代码后可以使锁板后大小yaw实时共一条直线
+            </li>
+            <li>防止小yaw触碰到限位，影响小yaw的锁板效果，而在扫描时暂时不调用，在锁板后再次共线
+            </li>
+            <li>经测试大小yaw的共线逻辑没有震荡，反应也较为迅速。
+            </li>
+            <li>简单描述大小yaw共线原理，根据大小yaw实际角度与目标角度的夹角，尽量维持在同一角度，达成这个条件大小yaw自我调节后必定共线
+            </li>
+            <li>详细的原理感兴趣的可以自行去推，不懂也可以询问
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-19">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 12</p>
+              <h3>26.3.19</h3>
+            </div>
+            <span class="entry-count">10 条要点</span>
+          </div>
+          <ul>
+            <li>之前的视觉自瞄锁板逻辑有问题，将目标装甲角度直接替换成小yaw的目标角度，会导致在过零点角度突变时yaw轴突然大角度反转一圈
+            </li>
+            <li>因为在过零点时目标角度在-170°左右而实际的小yaw角度在170°就会使得误差变为三百多度。
+            </li>
+            <li>因此想要正常的锁板逻辑需要把原先的简单角度替换改成后续增量式得角度
+            </li>
+            <li>但是这种增量式的角度有个弊端，在各个模式切换时要注意原先的目标角度和实际角度，若存在较大差异或者替换很容易造成云台疯转几圈
+            </li>
+            <li>为消除目标角度与实际角度的误差，在自瞄或者扫描装甲板时目标角度的赋值经常是不一样的，因此要时常注意角度问题
+            </li>
+            <li>同时，增量式的角度控制，如果写的有问题很容易让yaw轴的方向与你理想的目标角度会有所偏离
+            </li>
+            <li>因为增量式的控制只会体现于角度的变化，它不会明显指向目标的角度，因此要警惕，小yaw是否转向了你所想要的目标角度
+            </li>
+            <li>导航
+            </li>
+            <li>在导航传值到电控这边时会给一个极小极小的值，我们仍需要给一个速度，让哨兵继续前进到达目标的位置
+            </li>
+            <li>因此要加一个判断，将区间限在及小范围内，给一个小的速度
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-22">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 13</p>
+              <h3>26.3.22</h3>
+            </div>
+            <span class="entry-count">6 条要点</span>
+          </div>
+          <ul>
+            <li>现在的PID代码有许多隐含的问题，如微分一直没有值，积分的计算结果有问题
+            </li>
+            <li>离联盟赛的时间有限，如果贸然修改PID的源代码，容易使得原先调好的大小yaw可能都无法使用。
+            </li>
+            <li>所以暂时只能退而求其次，选择多花一点时间将PITCH调成一个勉强能用的值
+            </li>
+            <li>该工程文件十分古早，有许多冗余的代码，以及一些隐藏的问题，我已经大量删减过云台中无用的代码，并且确保其运行不会出奇怪的问题
+            </li>
+            <li>而底盘的代码已经全权的替换掉，目前也没有出现过问题
+            </li>
+            <li>PID代码以前还是用过其他的陀螺仪和一些没有效果的滤波，还有结构体上很多无用的变量（学长删不动了.....）
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-23">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 14</p>
+              <h3>26.3.23</h3>
+            </div>
+            <span class="entry-count">3 条要点</span>
+          </div>
+          <ul>
+            <li>小头pitch的角度值误差总是维持在5度，多次调整PID无法达到合适的控制效果，而且电机发热极其严重
+            </li>
+            <li>尝试通过电机手册计算测试出参数，确定理论上是否能正常控制，通过拉力计测试pitch需要转动的力约28N 力矩约1.4N/m
+            </li>
+            <li>需要的电流值远超安全电流导致电机发热极其严重，因此难以消除固定误差，所以需要在物理上尝试对重力进行一定的平衡，减少需要的力矩以便更好的控制
+            </li>
+          </ul>
+        </section>
+        <section class="entry" id="d-26-3-29">
+          <div class="entry-head">
+            <div>
+              <p class="entry-label">记录节点 15</p>
+              <h3>26.3.29</h3>
+            </div>
+            <span class="entry-count">18 条要点</span>
+          </div>
+          <ul>
+            <li>哨兵在比赛期间有一些隐患被发现
+            </li>
+            <li>代码上，底盘四个轮子的功率限幅太宽松了，很容易超出功率的限制导致底盘断电
+            </li>
+            <li>而小陀螺控制的代码也完善的差不多了，原先一些改动有误的地方也解决了，在比赛中是可以完成导航出来开启自瞄锁车发弹的逻辑
+            </li>
+            <li>在底盘控制上能正常移动，但四个轮子的转速仍有差异，在直线行驶时会有偏移，对于视觉的控制有一定的影响
+            </li>
+            <li>剩下是一些代码外未解决的问题
+            </li>
+            <li>（电控所完成的不仅仅是代码上的完善，需要权衡和解决车上关于不同部门的问题，同时需要协调好）
+            </li>
+            <li>结构上
+            </li>
+            <li>云台大yaw同步带转动的转盘固定方式还是有所欠缺，大yaw在转动数百圈后，转盘与电机间固定的螺丝会松脱，导致转盘出现上下晃动
+            </li>
+            <li>而电机驱动转盘转动完全依赖两构件间的摩擦力驱使转动，会导致电机的角速度和云台的角速度不同，这会牵动原先正常控制的代码出现问题
+            </li>
+            <li>跟随模式下，底盘四个轮子会疯转（代码中促使底盘疯转出现的原因可以自己思考一下，不懂可以咨询学长）
+            </li>
+            <li>同步带不够紧的原因已经简单的解决，后续还需结构完善同步带绷紧的
+            </li>
+            <li>拨盘驱动弹丸进入弹链转的结构上仍有一定的问题，使用的是原先的拨盘，当弹丸未完全落下时拨盘转动会卡在出弹旁的打印件上
+            </li>
+            <li>导致拨盘无法继续转动，直接卡死，只能反方向转动让弹丸完全落下才能将弹丸供入弹链中，这对无人控制的哨兵无疑是一个很大的问题
+            </li>
+            <li>很难通过代码完全弥补子弹卡死原因（可以解决轻微卡住的情况），后续结构可能会重新设计完善一个拨盘
+            </li>
+            <li>同时还有一个结构上稍微会的有的隐患，在靠近枪测的一颗螺丝松动会导致弹丸在快到枪口时有很大的阻力，
+            </li>
+            <li>硬件上，
+            </li>
+            <li>插在电脑上的一些接口在长时间的使用后出现了松动无法插紧，临时用热熔枪固定，无疑对于接口是有一定损伤并且无法随时插拔
+            </li>
+            <li>后续需要和硬件沟通好如何改善接口，提升接口的寿命或者找一些不易损坏的接口
+            </li>
+          </ul>
+        </section>
+            </section>
+            <p class="empty-state" hidden>没有匹配的记录，试试其他关键词，或清空检索条件。</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <button class="back-to-top" type="button" aria-label="返回顶部">回到顶部</button>
+  <script>
+    (() => {
+      const pageName = (window.location.pathname.split("/").filter(Boolean).pop() || "code_recoding.html")
+        .replace(/\s+/g, "-");
+      const legacyStorageKey = `code-recoding-draft:${pageName}:v2`;
+      const workspaceStorageKey = `code-recoding-workspace:${pageName}:v3`;
+      const progressBar = document.querySelector(".scroll-progress span");
+      const backToTop = document.querySelector(".back-to-top");
+      const toolbarActions = document.querySelector(".toolbar-actions");
+      const searchInput = document.querySelector("[data-search-input]");
+      const searchSummary = document.querySelector("[data-search-summary]");
+      const workspaceContext = document.querySelector("[data-workspace-context]");
+      const toolbarStatus = document.querySelector("[data-save-status]");
+      const emptyState = document.querySelector(".empty-state");
+      const entryContainer = document.querySelector(".entries");
+      const tocNav = document.querySelector(".toc nav");
+      const projectSummary = document.querySelector("[data-project-summary]");
+      const projectList = document.querySelector("[data-project-list]");
+      const fileList = document.querySelector("[data-file-list]");
+      const filePanelTitle = document.querySelector("[data-file-panel-title]");
+      const filePanelCopy = document.querySelector("[data-file-panel-copy]");
+      const projectStatus = document.querySelector("[data-project-status]");
+      const fileUpdated = document.querySelector("[data-file-updated]");
+      const toggleEditButton = document.querySelector('[data-action="toggle-edit"]');
+      const addProjectButtons = [...document.querySelectorAll('[data-action="add-project"]')];
+      const addFileButtons = [...document.querySelectorAll('[data-action="add-file"]')];
+      const deleteFileButtons = [...document.querySelectorAll('[data-action="delete-file"]')];
+      const deleteProjectButtons = [...document.querySelectorAll('[data-action="delete-project"]')];
+      const addEntryButton = document.querySelector('[data-action="add-entry"]');
+      const saveDraftButton = document.querySelector('[data-action="save-draft"]');
+      const restoreDraftButton = document.querySelector('[data-action="restore-draft"]');
+      const exportHtmlButton = document.querySelector('[data-action="export-html"]');
+      const collapseAllButton = document.querySelector('[data-action="collapse-all"]');
+      const expandAllButton = document.querySelector('[data-action="expand-all"]');
+      const matchPrevButton = document.querySelector('[data-action="match-prev"]');
+      const matchNextButton = document.querySelector('[data-action="match-next"]');
+      const resetPageButton = document.querySelector('[data-action="reset-page"]');
+      const staticRefs = {
+        title: document.querySelector("h1"),
+        lede: document.querySelector(".lede"),
+        note: document.querySelector(".hero-note"),
+        summaryTitle: document.querySelector(".summary h2"),
+        summaryBody: document.querySelector(".summary p"),
+      };
+      const revealNodes = [
+        ...document.querySelectorAll(".toolbar-shell, .hero, .summary, .toc-card, .panel-card"),
+      ];
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const state = {
+        isEditing: false,
+        isDirty: false,
+        activeFilter: "",
+        matches: [],
+        currentMatchIndex: -1,
+        scrollTicking: false,
+        autoSaveTimer: null,
+        autoSaveDelay: 900,
+        searchInputTimer: null,
+        filterRefreshTicking: false,
+        statsRefreshTicking: false,
+        hasPersistedDraft: false,
+        workspace: null,
+      };
+      let activeObserver = null;
+
+      const storage = {
+        readWorkspace() {
+          try {
+            const raw = window.localStorage.getItem(workspaceStorageKey);
+            return raw ? JSON.parse(raw) : null;
+          } catch (error) {
+            return null;
+          }
+        },
+        readLegacy() {
+          try {
+            const raw = window.localStorage.getItem(legacyStorageKey);
+            return raw ? JSON.parse(raw) : null;
+          } catch (error) {
+            return null;
+          }
+        },
+        writeWorkspace(payload) {
+          try {
+            window.localStorage.setItem(workspaceStorageKey, JSON.stringify(payload));
+            return true;
+          } catch (error) {
+            return false;
+          }
+        },
+        removeAll() {
+          try {
+            window.localStorage.removeItem(workspaceStorageKey);
+            window.localStorage.removeItem(legacyStorageKey);
+            return true;
+          } catch (error) {
+            return false;
+          }
+        },
+      };
+
+      const htmlToText = (html) => {
+        const helper = document.createElement("div");
+        helper.innerHTML = html || "";
+        return helper.textContent.trim();
+      };
+
+      const createEntryId = () => `entry-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const createProjectId = () => `project-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const createFileId = () => `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const nowIso = () => new Date().toISOString();
+      const formatShortTime = (value) => {
+        if (!value) {
+          return "未保存";
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return "未保存";
+        }
+        return date.toLocaleString("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      };
+
+      const getEntryElements = () => (
+        [...entryContainer.children].filter(
+          (node) => node.nodeType === Node.ELEMENT_NODE && node.classList.contains("entry"),
+        )
+      );
+
+      const getEditableNodes = () => (
+        [
+          staticRefs.title,
+          staticRefs.lede,
+          staticRefs.note,
+          staticRefs.summaryTitle,
+          staticRefs.summaryBody,
+          ...entryContainer.querySelectorAll("h3, .item-content"),
+        ].filter(Boolean)
+      );
+
+      const setStatus = (message, tone = "info") => {
+        toolbarStatus.textContent = message;
+        toolbarStatus.dataset.tone = tone;
+      };
+
+      const clearAutoSaveTimer = () => {
+        if (state.autoSaveTimer) {
+          window.clearTimeout(state.autoSaveTimer);
+          state.autoSaveTimer = null;
+        }
+      };
+
+      const clearSearchInputTimer = () => {
+        if (state.searchInputTimer) {
+          window.clearTimeout(state.searchInputTimer);
+          state.searchInputTimer = null;
+        }
+      };
+
+      const placeCaretAtEnd = (node) => {
+        if (!node) {
+          return;
+        }
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      };
+
+      const selectAllContent = (node) => {
+        if (!node) {
+          return;
+        }
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      };
+
+      const updateButtons = () => {
+        const currentProject = getActiveProject();
+        const currentFile = getActiveFile();
+        toggleEditButton.textContent = state.isEditing ? "退出编辑" : "进入编辑";
+        toggleEditButton.setAttribute("aria-pressed", String(state.isEditing));
+        addEntryButton.disabled = !state.isEditing;
+        saveDraftButton.disabled = !state.isDirty;
+        restoreDraftButton.disabled = !state.hasPersistedDraft;
+        matchPrevButton.disabled = state.matches.length === 0;
+        matchNextButton.disabled = state.matches.length === 0;
+        addProjectButtons.forEach((button) => {
+          button.disabled = false;
+        });
+        addFileButtons.forEach((button) => {
+          button.disabled = !currentProject;
+        });
+        deleteFileButtons.forEach((button) => {
+          button.disabled = !currentProject || !currentFile;
+        });
+        deleteProjectButtons.forEach((button) => {
+          button.disabled = !currentProject;
+        });
+      };
+
+      const requestDerivedStatsRefresh = () => {
+        if (state.statsRefreshTicking) {
+          return;
+        }
+        state.statsRefreshTicking = true;
+        window.requestAnimationFrame(() => {
+          state.statsRefreshTicking = false;
+          updateDerivedStats();
+        });
+      };
+
+      const requestFilterRefresh = () => {
+        if (!state.activeFilter || state.filterRefreshTicking) {
+          return;
+        }
+        state.filterRefreshTicking = true;
+        window.requestAnimationFrame(() => {
+          state.filterRefreshTicking = false;
+          updateSearchState(searchInput.value, {
+            preserveInput: true,
+            keepIndex: true,
+          });
+        });
+      };
+
+      const scheduleSearchInputRefresh = (value) => {
+        clearSearchInputTimer();
+        state.searchInputTimer = window.setTimeout(() => {
+          state.searchInputTimer = null;
+          updateSearchState(value, { preserveInput: true });
+        }, 120);
+      };
+
+      const countItems = (items) => items.reduce(
+        (sum, item) => sum + 1 + countItems(item.children || []),
+        0,
+      );
+
+      const createDefaultItem = (text = "新要点") => ({
+        textHtml: text,
+        children: [],
+      });
+
+      const createDefaultEntry = () => ({
+        id: createEntryId(),
+        dateHtml: "新日期",
+        items: [createDefaultItem()],
+        collapsed: false,
+      });
+
+      const extractLooseHtmlFromLi = (li) => {
+        const helper = document.createElement("div");
+        [...li.childNodes].forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "UL") {
+            return;
+          }
+          if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains("item-row")) {
+            return;
+          }
+          helper.appendChild(node.cloneNode(true));
+        });
+        return helper.innerHTML.trim() || "新要点";
+      };
+
+      const parseList = (listNode) => {
+        if (!listNode) {
+          return [];
+        }
+        return [...listNode.children]
+          .filter((child) => child.tagName === "LI")
+          .map((li) => {
+            const contentNode = li.querySelector(":scope > .item-row > .item-content");
+            const nestedList = [...li.children].find((child) => child.tagName === "UL");
+            return {
+              textHtml: (contentNode ? contentNode.innerHTML : extractLooseHtmlFromLi(li)) || "新要点",
+              children: parseList(nestedList),
+            };
+          });
+      };
+
+      const parseEntry = (entry) => {
+        const listNode = [...entry.children].find((child) => child.tagName === "UL");
+        return {
+          id: entry.id || createEntryId(),
+          dateHtml: entry.querySelector("h3")?.innerHTML || "新日期",
+          items: parseList(listNode),
+          collapsed: entry.classList.contains("is-collapsed"),
+        };
+      };
+
+      const captureEntriesState = () => getEntryElements().map(parseEntry);
+
+      const captureStaticState = () => ({
+        titleHtml: staticRefs.title.innerHTML,
+        ledeHtml: staticRefs.lede.innerHTML,
+        noteHtml: staticRefs.note.innerHTML,
+        summaryTitleHtml: staticRefs.summaryTitle.innerHTML,
+        summaryBodyHtml: staticRefs.summaryBody.innerHTML,
+      });
+
+      const applyStaticState = (data) => {
+        staticRefs.title.innerHTML = data.titleHtml || staticRefs.title.innerHTML;
+        staticRefs.lede.innerHTML = data.ledeHtml || staticRefs.lede.innerHTML;
+        staticRefs.note.innerHTML = data.noteHtml || staticRefs.note.innerHTML;
+        staticRefs.summaryTitle.innerHTML = data.summaryTitleHtml || staticRefs.summaryTitle.innerHTML;
+        staticRefs.summaryBody.innerHTML = data.summaryBodyHtml || staticRefs.summaryBody.innerHTML;
+      };
+
+      const cloneValue = (value) => JSON.parse(JSON.stringify(value));
+
+      const captureDocumentState = () => ({
+        static: captureStaticState(),
+        entries: captureEntriesState(),
+      });
+
+      const normalizeDocumentState = (documentState = {}) => ({
+        static: {
+          titleHtml: documentState.static?.titleHtml || "未命名文件",
+          ledeHtml: documentState.static?.ledeHtml || "在这里维护当前文件的项目记录、问题清单和阶段结论。",
+          noteHtml: documentState.static?.noteHtml || "企业项目工作台文件",
+          summaryTitleHtml: documentState.static?.summaryTitleHtml || "执行概览",
+          summaryBodyHtml: documentState.static?.summaryBodyHtml || "补充该文件的背景、范围和执行说明。",
+        },
+        entries: Array.isArray(documentState.entries) && documentState.entries.length
+          ? cloneValue(documentState.entries)
+          : [createDefaultEntry()],
+      });
+
+      const createBlankDocument = (projectName = "默认项目", fileName = "新文件") => normalizeDocumentState({
+        static: {
+          titleHtml: fileName,
+          ledeHtml: `${projectName} 的独立记录文件，可按阶段维护问题、结论与后续动作。`,
+          noteHtml: "企业项目工作台文件",
+          summaryTitleHtml: "文件概览",
+          summaryBodyHtml: "在这里补充当前文件的目标、风险和执行摘要。",
+        },
+        entries: [createDefaultEntry()],
+      });
+
+      const createFileRecord = (name, documentState) => ({
+        id: createFileId(),
+        name,
+        updatedAt: nowIso(),
+        document: normalizeDocumentState(documentState),
+      });
+
+      const createProjectRecord = (name, fileName, documentState) => {
+        const file = createFileRecord(fileName, documentState);
+        return {
+          id: createProjectId(),
+          name,
+          status: "进行中",
+          updatedAt: file.updatedAt,
+          files: [file],
+        };
+      };
+
+      const getActiveProject = () => (
+        state.workspace?.projects.find((project) => project.id === state.workspace.activeProjectId) || null
+      );
+
+      const getActiveFile = () => {
+        const project = getActiveProject();
+        return project?.files.find((file) => file.id === state.workspace.activeFileId) || null;
+      };
+
+      const refreshProjectUpdatedAt = (project) => {
+        if (!project) {
+          return;
+        }
+        const timestamps = project.files
+          .map((file) => new Date(file.updatedAt || 0).getTime())
+          .filter((value) => Number.isFinite(value) && value > 0);
+        project.updatedAt = timestamps.length ? new Date(Math.max(...timestamps)).toISOString() : nowIso();
+      };
+
+      const createWorkspaceFromDocument = (documentState, options = {}) => {
+        const titleText = htmlToText(documentState.static?.titleHtml) || "代码记录整理稿";
+        const projectName = options.projectName || "默认项目";
+        const fileName = options.fileName || titleText;
+        const project = createProjectRecord(projectName, fileName, documentState);
+        return {
+          version: 3,
+          savedAt: nowIso(),
+          activeProjectId: project.id,
+          activeFileId: project.files[0].id,
+          projects: [project],
+        };
+      };
+
+      const normalizeWorkspace = (workspace) => {
+        if (!workspace || workspace.version !== 3 || !Array.isArray(workspace.projects) || !workspace.projects.length) {
+          return null;
+        }
+
+        const projects = workspace.projects.map((project, projectIndex) => {
+          const projectId = project.id || `project-restored-${projectIndex}`;
+          const files = Array.isArray(project.files) && project.files.length
+            ? project.files.map((file, fileIndex) => ({
+              id: file.id || `${projectId}-file-${fileIndex}`,
+              name: file.name || `文件 ${fileIndex + 1}`,
+              updatedAt: file.updatedAt || project.updatedAt || nowIso(),
+              document: normalizeDocumentState(file.document),
+            }))
+            : [createFileRecord("未命名文件", createBlankDocument(project.name || "默认项目", "未命名文件"))];
+          const normalizedProject = {
+            id: projectId,
+            name: project.name || `项目 ${projectIndex + 1}`,
+            status: project.status || "进行中",
+            updatedAt: project.updatedAt || nowIso(),
+            files,
+          };
+          refreshProjectUpdatedAt(normalizedProject);
+          return normalizedProject;
+        });
+
+        const activeProject = projects.find((project) => project.id === workspace.activeProjectId) || projects[0];
+        const activeFile = activeProject.files.find((file) => file.id === workspace.activeFileId) || activeProject.files[0];
+
+        return {
+          version: 3,
+          savedAt: workspace.savedAt || nowIso(),
+          activeProjectId: activeProject.id,
+          activeFileId: activeFile.id,
+          projects,
+        };
+      };
+
+      const migrateLegacyDraft = (legacyDraft) => {
+        if (!legacyDraft || legacyDraft.version !== 2 || !legacyDraft.static || !Array.isArray(legacyDraft.entries)) {
+          return null;
+        }
+        return createWorkspaceFromDocument({
+          static: legacyDraft.static,
+          entries: legacyDraft.entries,
+        }, {
+          projectName: "历史迁移项目",
+          fileName: htmlToText(legacyDraft.static.titleHtml) || "代码记录整理稿",
+        });
+      };
+
+      const initialDocumentSnapshot = captureDocumentState();
+
+      const loadWorkspaceState = () => {
+        const workspaceDraft = normalizeWorkspace(storage.readWorkspace());
+        if (workspaceDraft) {
+          state.hasPersistedDraft = true;
+          return {
+            workspace: workspaceDraft,
+            restoredFromStorage: true,
+          };
+        }
+
+        const legacyWorkspace = migrateLegacyDraft(storage.readLegacy());
+        if (legacyWorkspace) {
+          state.hasPersistedDraft = true;
+          return {
+            workspace: legacyWorkspace,
+            restoredFromStorage: true,
+          };
+        }
+
+        state.hasPersistedDraft = false;
+        return {
+          workspace: createWorkspaceFromDocument(initialDocumentSnapshot, {
+            projectName: "默认项目",
+            fileName: htmlToText(initialDocumentSnapshot.static.titleHtml) || "代码记录整理稿",
+          }),
+          restoredFromStorage: false,
+        };
+      };
+
+      const syncActiveFileFromDom = (options = {}) => {
+        const activeProject = getActiveProject();
+        const activeFile = getActiveFile();
+        if (!activeProject || !activeFile) {
+          return;
+        }
+
+        activeFile.document = normalizeDocumentState(captureDocumentState());
+        if (options.renameFromTitle !== false) {
+          const nextName = htmlToText(activeFile.document.static.titleHtml);
+          activeFile.name = nextName || activeFile.name;
+        }
+        if (options.touchUpdatedAt !== false) {
+          activeFile.updatedAt = nowIso();
+        }
+        refreshProjectUpdatedAt(activeProject);
+      };
+
+      const renderProjectList = () => {
+        const activeProject = getActiveProject();
+        projectList.innerHTML = "";
+
+        state.workspace.projects.forEach((project) => {
+          const row = document.createElement("div");
+          row.className = "project-row";
+
+          const mainButton = document.createElement("button");
+          mainButton.type = "button";
+          mainButton.className = "project-card";
+          if (activeProject && project.id === activeProject.id) {
+            mainButton.classList.add("is-active");
+          }
+          mainButton.dataset.projectId = project.id;
+
+          const title = document.createElement("strong");
+          title.textContent = project.name;
+          const meta = document.createElement("span");
+          meta.textContent = `${project.files.length} 个文件 · ${project.status}`;
+          const updated = document.createElement("small");
+          updated.textContent = `更新于 ${formatShortTime(project.updatedAt)}`;
+          mainButton.append(title, meta, updated);
+
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "row-delete";
+          deleteButton.dataset.projectDelete = project.id;
+          deleteButton.textContent = "删";
+
+          row.append(mainButton, deleteButton);
+          projectList.appendChild(row);
+        });
+      };
+
+      const renderFileList = () => {
+        const activeProject = getActiveProject();
+        const activeFile = getActiveFile();
+        fileList.innerHTML = "";
+
+        if (!activeProject) {
+          return;
+        }
+
+        activeProject.files.forEach((file) => {
+          const row = document.createElement("div");
+          row.className = "file-row";
+
+          const mainButton = document.createElement("button");
+          mainButton.type = "button";
+          mainButton.className = "file-card";
+          if (activeFile && file.id === activeFile.id) {
+            mainButton.classList.add("is-active");
+          }
+          mainButton.dataset.fileId = file.id;
+
+          const title = document.createElement("strong");
+          title.textContent = file.name;
+          const meta = document.createElement("span");
+          meta.textContent = `${file.document.entries.length} 段记录`;
+          const updated = document.createElement("small");
+          updated.textContent = `更新于 ${formatShortTime(file.updatedAt)}`;
+          mainButton.append(title, meta, updated);
+
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "row-delete";
+          deleteButton.dataset.fileDelete = file.id;
+          deleteButton.textContent = "删";
+
+          row.append(mainButton, deleteButton);
+          fileList.appendChild(row);
+        });
+      };
+
+      const updateWorkspaceChrome = () => {
+        const activeProject = getActiveProject();
+        const activeFile = getActiveFile();
+        if (!activeProject || !activeFile) {
+          return;
+        }
+
+        workspaceContext.textContent = `当前项目：${activeProject.name} / 当前文件：${activeFile.name}`;
+        projectSummary.textContent = `共 ${state.workspace.projects.length} 个项目，当前项目包含 ${activeProject.files.length} 个文件。`;
+        filePanelTitle.textContent = `${activeProject.name} · 文件树`;
+        filePanelCopy.textContent = `当前文件：${activeFile.name}，可独立维护、切换和删除。`;
+        projectStatus.textContent = activeProject.status;
+        fileUpdated.textContent = state.isDirty ? "当前文件未保存" : `最近保存 ${formatShortTime(activeFile.updatedAt)}`;
+      };
+
+      const applyWorkspaceDocument = (fileRecord, options = {}) => {
+        applyStaticState(fileRecord.document.static);
+        rebuildFromData(fileRecord.document.entries, { preserveFilter: false });
+        state.currentMatchIndex = -1;
+        state.matches = [];
+        if (!options.silent) {
+          setStatus(`已切换到文件：${fileRecord.name}`, "info");
+        }
+        renderProjectList();
+        renderFileList();
+        updateWorkspaceChrome();
+        updateButtons();
+      };
+
+      const setActiveFile = (projectId, fileId, options = {}) => {
+        syncActiveFileFromDom({ touchUpdatedAt: false });
+        const nextProject = state.workspace.projects.find((project) => project.id === projectId);
+        if (!nextProject) {
+          return;
+        }
+        const nextFile = nextProject.files.find((file) => file.id === fileId) || nextProject.files[0];
+        state.workspace.activeProjectId = nextProject.id;
+        state.workspace.activeFileId = nextFile.id;
+        applyWorkspaceDocument(nextFile, options);
+        void saveDraft("auto");
+      };
+
+      const createProject = () => {
+        const name = window.prompt("请输入项目名称：", `项目 ${state.workspace.projects.length + 1}`);
+        if (!name) {
+          return;
+        }
+        syncActiveFileFromDom({ touchUpdatedAt: false });
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+          return;
+        }
+        const project = createProjectRecord(trimmedName, "新建文件", createBlankDocument(trimmedName, "新建文件"));
+        state.workspace.projects.push(project);
+        state.workspace.activeProjectId = project.id;
+        state.workspace.activeFileId = project.files[0].id;
+        applyWorkspaceDocument(project.files[0], { silent: true });
+        markDirty("已新增项目，系统将自动保存工作区。");
+        scheduleAutoSave();
+      };
+
+      const createFile = () => {
+        const activeProject = getActiveProject();
+        if (!activeProject) {
+          return;
+        }
+        const name = window.prompt("请输入文件名称：", `文件 ${activeProject.files.length + 1}`);
+        if (!name) {
+          return;
+        }
+        syncActiveFileFromDom({ touchUpdatedAt: false });
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+          return;
+        }
+        const file = createFileRecord(trimmedName, createBlankDocument(activeProject.name, trimmedName));
+        activeProject.files.push(file);
+        refreshProjectUpdatedAt(activeProject);
+        state.workspace.activeFileId = file.id;
+        applyWorkspaceDocument(file, { silent: true });
+        markDirty("已新增文件，系统将自动保存工作区。");
+        scheduleAutoSave();
+      };
+
+      const deleteCurrentProject = (projectId) => {
+        const project = state.workspace.projects.find((item) => item.id === projectId) || getActiveProject();
+        if (!project) {
+          return;
+        }
+        const confirmed = window.confirm(`确认删除项目“${project.name}”吗？其下文件会一并删除。`);
+        if (!confirmed) {
+          return;
+        }
+
+        syncActiveFileFromDom({ touchUpdatedAt: false });
+        const wasActiveProject = state.workspace.activeProjectId === project.id;
+        state.workspace.projects = state.workspace.projects.filter((item) => item.id !== project.id);
+        if (!state.workspace.projects.length) {
+          const fallback = createProjectRecord("默认项目", "新建文件", createBlankDocument("默认项目", "新建文件"));
+          state.workspace.projects.push(fallback);
+        }
+        const nextProject = wasActiveProject
+          ? state.workspace.projects[0]
+          : state.workspace.projects.find((item) => item.id === state.workspace.activeProjectId) || state.workspace.projects[0];
+        const nextFile = nextProject.files.find((file) => file.id === state.workspace.activeFileId) || nextProject.files[0];
+        state.workspace.activeProjectId = nextProject.id;
+        state.workspace.activeFileId = nextFile.id;
+        applyWorkspaceDocument(nextFile, { silent: true });
+        markDirty("已删除项目，系统将自动保存工作区。");
+        scheduleAutoSave();
+      };
+
+      const deleteCurrentFile = (fileId) => {
+        const activeProject = getActiveProject();
+        if (!activeProject) {
+          return;
+        }
+        const targetFile = activeProject.files.find((file) => file.id === fileId) || getActiveFile();
+        if (!targetFile) {
+          return;
+        }
+        const confirmed = window.confirm(`确认删除文件“${targetFile.name}”吗？`);
+        if (!confirmed) {
+          return;
+        }
+
+        syncActiveFileFromDom({ touchUpdatedAt: false });
+        const wasActiveFile = state.workspace.activeFileId === targetFile.id;
+        activeProject.files = activeProject.files.filter((file) => file.id !== targetFile.id);
+        if (!activeProject.files.length) {
+          activeProject.files.push(createFileRecord("新建文件", createBlankDocument(activeProject.name, "新建文件")));
+        }
+        refreshProjectUpdatedAt(activeProject);
+        const nextFile = wasActiveFile
+          ? activeProject.files[0]
+          : activeProject.files.find((file) => file.id === state.workspace.activeFileId) || activeProject.files[0];
+        state.workspace.activeFileId = nextFile.id;
+        applyWorkspaceDocument(nextFile, { silent: true });
+        markDirty("已删除文件，系统将自动保存工作区。");
+        scheduleAutoSave();
+      };
+
+      const createActionButton = (label, attrName, attrValue, className = "") => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.setAttribute(attrName, attrValue);
+        if (className) {
+          button.className = className;
+        }
+        return button;
+      };
+
+      const createItemElement = (item, path) => {
+        const li = document.createElement("li");
+        li.dataset.itemPath = path.join(".");
+
+        const row = document.createElement("div");
+        row.className = "item-row";
+
+        const content = document.createElement("span");
+        content.className = "item-content editable-node";
+        content.innerHTML = item.textHtml || "新要点";
+        row.appendChild(content);
+
+        const actions = document.createElement("span");
+        actions.className = "item-actions";
+        actions.appendChild(createActionButton("同级+", "data-item-action", "add-sibling"));
+        actions.appendChild(createActionButton("子项+", "data-item-action", "add-child"));
+        actions.appendChild(createActionButton("删除", "data-item-action", "delete-item"));
+        row.appendChild(actions);
+
+        li.appendChild(row);
+
+        if (item.children && item.children.length) {
+          li.appendChild(createListElement(item.children, path));
+        }
+
+        return li;
+      };
+
+      const createListElement = (items, parentPath = []) => {
+        const ul = document.createElement("ul");
+        items.forEach((item, index) => {
+          ul.appendChild(createItemElement(item, [...parentPath, index]));
+        });
+        return ul;
+      };
+
+      const createEntryElement = (entry, index) => {
+        const section = document.createElement("section");
+        section.className = "entry";
+        section.id = entry.id || createEntryId();
+        if (entry.collapsed) {
+          section.classList.add("is-collapsed");
+        }
+
+        const head = document.createElement("div");
+        head.className = "entry-head";
+
+        const copy = document.createElement("div");
+        const label = document.createElement("p");
+        label.className = "entry-label";
+        label.textContent = `记录节点 ${String(index + 1).padStart(2, "0")}`;
+        const title = document.createElement("h3");
+        title.className = "editable-node";
+        title.innerHTML = entry.dateHtml || "新日期";
+        copy.append(label, title);
+
+        const actionsWrap = document.createElement("div");
+        actionsWrap.className = "entry-actions";
+
+        const count = document.createElement("span");
+        count.className = "entry-count";
+        count.textContent = `${countItems(entry.items)} 条要点`;
+        actionsWrap.appendChild(count);
+
+        actionsWrap.appendChild(
+          createActionButton(
+            entry.collapsed ? "展开" : "收起",
+            "data-entry-action",
+            "toggle-collapse",
+          ),
+        );
+
+        const addItemButton = createActionButton("新增要点", "data-entry-action", "add-item", "edit-only");
+        const addEntryButtonLocal = createActionButton("后插记录", "data-entry-action", "add-entry-after", "edit-only");
+        const deleteEntryButton = createActionButton("删除记录", "data-entry-action", "delete-entry", "edit-only");
+        actionsWrap.append(addItemButton, addEntryButtonLocal, deleteEntryButton);
+
+        head.append(copy, actionsWrap);
+        section.appendChild(head);
+        section.appendChild(createListElement(entry.items || [createDefaultItem()]));
+        return section;
+      };
+
+      const reconnectActiveObserver = () => {
+        if (activeObserver) {
+          activeObserver.disconnect();
+          activeObserver = null;
+        }
+
+        const entries = getEntryElements();
+        if (!("IntersectionObserver" in window) || !entries.length) {
+          return;
+        }
+
+        activeObserver = new IntersectionObserver(
+          (observerEntries) => {
+            if (state.activeFilter) {
+              return;
+            }
+            const current = observerEntries
+              .filter(
+                (entry) => entry.isIntersecting && !entry.target.classList.contains("is-hidden"),
+              )
+              .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (!current) {
+              return;
+            }
+            [...tocNav.querySelectorAll("a")].forEach((link) => {
+              const id = link.getAttribute("href").slice(1);
+              link.classList.toggle("is-active", id === current.target.id);
+            });
+          },
+          {
+            threshold: [0.2, 0.45, 0.7],
+            rootMargin: "-30% 0px -45% 0px",
+          },
+        );
+
+        entries.forEach((entry) => activeObserver.observe(entry));
+      };
+
+      const setEditing = (enabled) => {
+        state.isEditing = enabled;
+        document.body.classList.toggle("is-editing", enabled);
+
+        getEditableNodes().forEach((node) => {
+          if (enabled) {
+            node.setAttribute("contenteditable", "true");
+            node.setAttribute("spellcheck", "false");
+          } else {
+            node.removeAttribute("contenteditable");
+            node.removeAttribute("spellcheck");
+            node.blur();
+          }
+        });
+
+        if (enabled) {
+          setStatus("编辑模式已开启，可维护当前文件并继续新增记录、要点。", "info");
+        } else if (state.isDirty) {
+          setStatus("已退出编辑，当前仍有未保存改动。", "dirty");
+        } else {
+          setStatus("查看模式", "info");
+        }
+
+        updateButtons();
+      };
+
+      const renderTocFromDom = () => {
+        const previousActiveId = tocNav.querySelector(".is-active")?.getAttribute("href")?.slice(1);
+        tocNav.innerHTML = "";
+
+        getEntryElements().forEach((entry) => {
+          const link = document.createElement("a");
+          link.href = `#${entry.id}`;
+          link.textContent = entry.querySelector("h3")?.textContent.trim() || "未命名记录";
+          if (entry.classList.contains("is-hidden")) {
+            link.classList.add("is-hidden");
+          }
+          if (entry.id === previousActiveId && !entry.classList.contains("is-hidden")) {
+            link.classList.add("is-active");
+          }
+          tocNav.appendChild(link);
+        });
+      };
+
+      const updateDerivedStats = () => {
+        const entries = getEntryElements();
+        let totalPoints = 0;
+
+        entries.forEach((entry, index) => {
+          const itemCount = entry.querySelectorAll("li").length;
+          const label = entry.querySelector(".entry-label");
+          const countNode = entry.querySelector(".entry-count");
+
+          totalPoints += itemCount;
+
+          if (label) {
+            label.textContent = `记录节点 ${String(index + 1).padStart(2, "0")}`;
+          }
+
+          if (countNode) {
+            countNode.textContent = `${itemCount} 条要点`;
+          }
+        });
+
+        renderTocFromDom();
+
+        const statNodes = [...document.querySelectorAll(".stat-card strong")];
+        if (statNodes[0] && entries.length) {
+          const first = entries[0].querySelector("h3")?.textContent.trim() || "起始";
+          const last = entries[entries.length - 1].querySelector("h3")?.textContent.trim() || "结束";
+          statNodes[0].textContent = `${first} - ${last}`;
+        }
+        if (statNodes[1]) {
+          statNodes[1].textContent = `${entries.length} 段记录`;
+        }
+        if (statNodes[2]) {
+          statNodes[2].textContent = `${totalPoints} 条要点`;
+        }
+
+        const visibleEntries = entries.filter((entry) => !entry.classList.contains("is-hidden"));
+        const activeProject = getActiveProject();
+        const activeFile = getActiveFile();
+        if (activeFile) {
+          activeFile.name = htmlToText(staticRefs.title.innerHTML) || activeFile.name;
+        }
+
+        searchSummary.textContent = state.activeFilter
+          ? `检索中：${visibleEntries.length} / ${entries.length} 段记录，${state.matches.length} 处命中。`
+          : `共 ${state.workspace?.projects.length || 1} 个项目，当前文件 ${entries.length} 段记录，${totalPoints} 条要点。`;
+
+        if (activeProject && activeFile) {
+          workspaceContext.textContent = `当前项目：${activeProject.name} / 当前文件：${activeFile.name}`;
+        }
+
+        emptyState.hidden = visibleEntries.length !== 0;
+        updateWorkspaceChrome();
+      };
+
+      const serializeDraft = () => {
+        syncActiveFileFromDom();
+        state.workspace.savedAt = nowIso();
+        return cloneValue(state.workspace);
+      };
+
+      const removeSearchClasses = () => {
+        document.querySelectorAll(".search-hit, .search-current").forEach((node) => {
+          node.classList.remove("search-hit", "search-current");
+        });
+        getEntryElements().forEach((entry) => {
+          entry.classList.remove("is-search-open");
+        });
+        state.matches = [];
+        state.currentMatchIndex = -1;
+      };
+
+      const focusMatch = (index, options = {}) => {
+        if (!state.matches.length) {
+          return;
+        }
+
+        const normalizedIndex = ((index % state.matches.length) + state.matches.length) % state.matches.length;
+        state.currentMatchIndex = normalizedIndex;
+        state.matches.forEach((node, nodeIndex) => {
+          node.classList.toggle("search-current", nodeIndex === normalizedIndex);
+        });
+
+        const current = state.matches[normalizedIndex];
+        const parentEntry = current.closest(".entry");
+        if (parentEntry) {
+          parentEntry.classList.add("is-search-open");
+        }
+
+        if (options.scroll !== false) {
+          current.scrollIntoView({
+            block: "center",
+            behavior: reduceMotion ? "auto" : "smooth",
+          });
+        }
+
+        requestScrollUpdate();
+        updateButtons();
+      };
+
+      const updateSearchState = (rawValue, options = {}) => {
+        clearSearchInputTimer();
+        state.activeFilter = (rawValue || "").trim();
+        const keyword = state.activeFilter.toLowerCase();
+        const entries = getEntryElements();
+        removeSearchClasses();
+
+        entries.forEach((entry) => {
+          const matched = !keyword || entry.textContent.toLowerCase().includes(keyword);
+          entry.classList.toggle("is-hidden", !matched);
+          if (keyword && matched) {
+            entry.classList.add("is-search-open");
+          }
+        });
+
+        renderTocFromDom();
+
+        if (keyword) {
+          const searchNodes = [
+            staticRefs.title,
+            staticRefs.lede,
+            staticRefs.note,
+            staticRefs.summaryTitle,
+            staticRefs.summaryBody,
+            ...entryContainer.querySelectorAll(".entry:not(.is-hidden) h3, .entry:not(.is-hidden) .item-content"),
+          ];
+
+          state.matches = searchNodes.filter((node) => {
+            const matched = node.textContent.toLowerCase().includes(keyword);
+            node.classList.toggle("search-hit", matched);
+            return matched;
+          });
+
+          if (state.matches.length) {
+            focusMatch(options.keepIndex ? state.currentMatchIndex : 0, { scroll: false });
+          }
+        }
+
+        if (!options.preserveInput) {
+          searchInput.value = state.activeFilter;
+        }
+
+        updateDerivedStats();
+        updateButtons();
+      };
+
+      const downloadBlob = (filename, blob) => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      };
+
+      const cleanExportClone = (root) => {
+        const cloneBody = root.querySelector("body");
+        if (cloneBody) {
+          cloneBody.classList.remove("is-editing");
+        }
+
+        root.querySelectorAll(".project-sidebar, .file-sidebar").forEach((node) => {
+          node.remove();
+        });
+
+        root.querySelectorAll("[contenteditable]").forEach((node) => {
+          node.removeAttribute("contenteditable");
+          node.removeAttribute("spellcheck");
+        });
+
+        root.querySelectorAll(".is-hidden, .is-search-open, .search-hit, .search-current").forEach((node) => {
+          node.classList.remove("is-hidden", "is-search-open", "search-hit", "search-current");
+        });
+
+        const cloneSearch = root.querySelector("[data-search-input]");
+        if (cloneSearch) {
+          cloneSearch.value = "";
+        }
+
+        const cloneStatus = root.querySelector("[data-save-status]");
+        if (cloneStatus) {
+          cloneStatus.textContent = "查看模式";
+          cloneStatus.dataset.tone = "info";
+        }
+
+        const cloneEmpty = root.querySelector(".empty-state");
+        if (cloneEmpty) {
+          cloneEmpty.hidden = true;
+        }
+      };
+
+      const exportHtml = async () => {
+        const snapshot = serializeDraft();
+        const activeProject = snapshot.projects.find((project) => project.id === snapshot.activeProjectId);
+        const activeFile = activeProject?.files.find((file) => file.id === snapshot.activeFileId);
+        if (!activeFile) {
+          setStatus("当前没有可导出的文件。", "warning");
+          return;
+        }
+        applyStaticState(activeFile.document.static);
+        rebuildFromData(activeFile.document.entries, { preserveFilter: true });
+
+        const clone = document.documentElement.cloneNode(true);
+        cleanExportClone(clone);
+        const html = `<!DOCTYPE html>\n${clone.outerHTML}`;
+        const filename = `${activeProject.name}-${activeFile.name}`.replace(/[\\/:*?"<>|]/g, "-") + ".html";
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+
+        if ("showSaveFilePicker" in window && window.isSecureContext) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [
+                {
+                  description: "HTML File",
+                  accept: { "text/html": [".html"] },
+                },
+              ],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            clearAutoSaveTimer();
+            state.isDirty = false;
+            setStatus("已另存为 HTML 文件。", "success");
+            updateButtons();
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") {
+              setStatus("已取消导出。", "info");
+              return;
+            }
+          }
+        }
+
+        downloadBlob(filename, blob);
+        clearAutoSaveTimer();
+        state.isDirty = false;
+        setStatus("当前环境已回退为下载导出。", "success");
+        updateButtons();
+      };
+
+      const saveDraft = (mode = "manual") => {
+        const payload = serializeDraft();
+        if (!storage.writeWorkspace(payload)) {
+          setStatus("当前环境无法写入本地草稿。", "warning");
+          return false;
+        }
+
+        state.hasPersistedDraft = true;
+        clearAutoSaveTimer();
+        state.isDirty = false;
+        const timeText = new Date().toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        setStatus(
+          mode === "auto" ? `已自动保存工作区 ${timeText}` : `工作区已保存 ${timeText}`,
+          "success",
+        );
+        updateButtons();
+        updateWorkspaceChrome();
+        return true;
+      };
+
+      const scheduleAutoSave = () => {
+        clearAutoSaveTimer();
+        state.autoSaveTimer = window.setTimeout(() => {
+          saveDraft("auto");
+        }, state.autoSaveDelay);
+      };
+
+      const markDirty = (message = "内容已修改，系统将自动保存。") => {
+        state.isDirty = true;
+        setStatus(message, "dirty");
+        updateButtons();
+        updateWorkspaceChrome();
+      };
+
+      const applyDraft = (draft, options = {}) => {
+        const normalized = draft?.version === 3
+          ? normalizeWorkspace(draft)
+          : migrateLegacyDraft(draft);
+        if (!normalized) {
+          return false;
+        }
+
+        state.workspace = normalized;
+        state.hasPersistedDraft = true;
+        const activeFile = getActiveFile();
+        if (!activeFile) {
+          return false;
+        }
+        applyStaticState(activeFile.document.static);
+        rebuildFromData(activeFile.document.entries, { preserveFilter: false });
+        state.isDirty = false;
+        if (!options.silent) {
+          setStatus("已恢复本地工作区。", "success");
+        }
+        renderProjectList();
+        renderFileList();
+        updateWorkspaceChrome();
+        updateButtons();
+        return true;
+      };
+
+      const updateScrollState = () => {
+        state.scrollTicking = false;
+        const doc = document.documentElement;
+        const maxScroll = doc.scrollHeight - doc.clientHeight;
+        const progress = maxScroll > 0 ? doc.scrollTop / maxScroll : 0;
+        progressBar.style.transform = `scaleX(${progress})`;
+        backToTop.classList.toggle("is-visible", doc.scrollTop > 360);
+      };
+
+      const requestScrollUpdate = () => {
+        if (state.scrollTicking) {
+          return;
+        }
+        state.scrollTicking = true;
+        window.requestAnimationFrame(updateScrollState);
+      };
+
+      const resolveItemLocation = (items, path) => {
+        let currentItems = items;
+        let parentArray = null;
+        let item = null;
+        let index = -1;
+
+        path.forEach((segment, depth) => {
+          index = Number(segment);
+          parentArray = currentItems;
+          item = currentItems[index];
+          if (depth < path.length - 1) {
+            currentItems = item.children;
+          }
+        });
+
+        return {
+          parentArray,
+          item,
+          index,
+        };
+      };
+
+      const insertRelativeItem = (entryId, itemPath, mode) => {
+        const entriesData = captureEntriesState();
+        const entryData = entriesData.find((entry) => entry.id === entryId);
+        if (!entryData) {
+          return false;
+        }
+
+        const path = itemPath.split(".").filter(Boolean).map(Number);
+        const { parentArray, item, index } = resolveItemLocation(entryData.items, path);
+        if (!parentArray || !item || index < 0) {
+          return false;
+        }
+
+        let focusPath = "";
+        let dirtyMessage = "已新增同级要点，直接输入即可替换占位文本。";
+
+        if (mode === "child") {
+          item.children.push(createDefaultItem());
+          focusPath = [...path, item.children.length - 1].join(".");
+          dirtyMessage = "已新增子要点，直接输入即可替换占位文本。";
+        } else {
+          parentArray.splice(index + 1, 0, createDefaultItem());
+          focusPath = [...path.slice(0, -1), index + 1].join(".");
+        }
+
+        rebuildFromData(entriesData, {
+          preserveFilter: true,
+          focus: {
+            entryId,
+            type: "item",
+            path: focusPath,
+            selectAll: true,
+          },
+        });
+        markDirty(dirtyMessage);
+        scheduleAutoSave();
+        return true;
+      };
+
+      const rebuildFromData = (entriesData, options = {}) => {
+        entryContainer.innerHTML = "";
+        entriesData.forEach((entry, index) => {
+          entryContainer.appendChild(createEntryElement(entry, index));
+        });
+
+        getEditableNodes().forEach((node) => {
+          node.classList.add("editable-node");
+        });
+
+        renderTocFromDom();
+        reconnectActiveObserver();
+        updateDerivedStats();
+        setEditing(state.isEditing);
+
+        if (options.preserveFilter) {
+          updateSearchState(state.activeFilter, {
+            preserveInput: true,
+            keepIndex: true,
+          });
+        } else {
+          removeSearchClasses();
+          state.activeFilter = "";
+          searchInput.value = "";
+          updateDerivedStats();
+        }
+
+        if (options.focus) {
+          window.requestAnimationFrame(() => {
+            const focusRoot = document.getElementById(options.focus.entryId);
+            if (!focusRoot) {
+              return;
+            }
+
+            let target = null;
+            if (options.focus.type === "date") {
+              target = focusRoot.querySelector("h3");
+            } else if (options.focus.type === "item") {
+              target = focusRoot.querySelector(`[data-item-path="${options.focus.path}"] > .item-row > .item-content`);
+            }
+
+            if (target && state.isEditing) {
+              target.focus();
+              if (options.focus.selectAll) {
+                selectAllContent(target);
+              } else {
+                placeCaretAtEnd(target);
+              }
+            }
+          });
+        }
+
+        requestScrollUpdate();
+      };
+
+      revealNodes.forEach((node, index) => {
+        node.classList.add("reveal-ready");
+        node.style.setProperty("--reveal-delay", `${Math.min(index * 45, 200)}ms`);
+      });
+
+      if (reduceMotion || !("IntersectionObserver" in window)) {
+        revealNodes.forEach((node) => node.classList.add("is-visible"));
+      } else {
+        const revealObserver = new IntersectionObserver(
+          (observerEntries, observer) => {
+            observerEntries.forEach((entry) => {
+              if (!entry.isIntersecting) {
+                return;
+              }
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            });
+          },
+          {
+            threshold: 0.16,
+            rootMargin: "0px 0px -10% 0px",
+          },
+        );
+        revealNodes.forEach((node) => revealObserver.observe(node));
+      }
+
+      const workspaceBootstrap = loadWorkspaceState();
+      state.workspace = workspaceBootstrap.workspace;
+      const bootstrapFile = getActiveFile();
+      if (bootstrapFile) {
+        applyWorkspaceDocument(bootstrapFile, { silent: true });
+      }
+
+      document.addEventListener("scroll", requestScrollUpdate, { passive: true });
+      window.addEventListener("resize", requestScrollUpdate, { passive: true });
+
+      tocNav.addEventListener("click", (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) {
+          return;
+        }
+        const id = link.getAttribute("href").slice(1);
+        window.setTimeout(() => {
+          [...tocNav.querySelectorAll("a")].forEach((currentLink) => {
+            currentLink.classList.toggle("is-active", currentLink === link);
+          });
+          const targetEntry = document.getElementById(id);
+          targetEntry?.classList.remove("is-collapsed");
+          const toggleButton = targetEntry?.querySelector('[data-entry-action="toggle-collapse"]');
+          if (toggleButton) {
+            toggleButton.textContent = "收起";
+          }
+        }, reduceMotion ? 0 : 140);
+      });
+
+      backToTop.addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+      });
+
+      toolbarActions.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+
+        const action = button.dataset.action;
+
+        if (action === "toggle-edit") {
+          setEditing(!state.isEditing);
+          return;
+        }
+
+        if (action === "add-project") {
+          createProject();
+          return;
+        }
+
+        if (action === "add-file") {
+          createFile();
+          return;
+        }
+
+        if (action === "delete-file") {
+          deleteCurrentFile();
+          return;
+        }
+
+        if (action === "delete-project") {
+          deleteCurrentProject();
+          return;
+        }
+
+        if (action === "save-draft") {
+          saveDraft("manual");
+          return;
+        }
+
+        if (action === "restore-draft") {
+          const draft = storage.readWorkspace() || storage.readLegacy();
+          if (!draft) {
+            setStatus("当前没有可恢复的本地工作区。", "warning");
+            updateButtons();
+            return;
+          }
+          if (!applyDraft(draft)) {
+            setStatus("检测到损坏的工作区草稿，当前版本无法自动恢复。", "warning");
+          }
+          return;
+        }
+
+        if (action === "export-html") {
+          void exportHtml();
+          return;
+        }
+
+        if (action === "reset-page") {
+          const shouldReset = window.confirm("这会清除本地工作区草稿并刷新页面，是否继续？");
+          if (!shouldReset) {
+            return;
+          }
+          storage.removeAll();
+          state.hasPersistedDraft = false;
+          state.isDirty = false;
+          window.location.reload();
+          return;
+        }
+
+        if (action === "collapse-all") {
+          const entriesData = captureEntriesState().map((entry) => ({
+            ...entry,
+            collapsed: true,
+          }));
+          rebuildFromData(entriesData, { preserveFilter: true });
+          markDirty("折叠状态已修改，系统将自动保存。");
+          scheduleAutoSave();
+          return;
+        }
+
+        if (action === "expand-all") {
+          const entriesData = captureEntriesState().map((entry) => ({
+            ...entry,
+            collapsed: false,
+          }));
+          rebuildFromData(entriesData, { preserveFilter: true });
+          markDirty("折叠状态已修改，系统将自动保存。");
+          scheduleAutoSave();
+          return;
+        }
+
+        if (action === "match-prev") {
+          focusMatch(state.currentMatchIndex - 1);
+          return;
+        }
+
+        if (action === "match-next") {
+          focusMatch(state.currentMatchIndex + 1);
+          return;
+        }
+
+        if (action === "add-entry") {
+          const entriesData = captureEntriesState();
+          const newEntry = createDefaultEntry();
+          entriesData.push(newEntry);
+          rebuildFromData(entriesData, {
+            preserveFilter: true,
+            focus: { entryId: newEntry.id, type: "date", selectAll: true },
+          });
+          markDirty("已新增一条记录，直接输入即可替换占位文本。");
+          scheduleAutoSave();
+        }
+      });
+
+      document.querySelector(".workspace").addEventListener("click", (event) => {
+        const button = event.target.closest(".project-sidebar button[data-action], .file-sidebar button[data-action]");
+        if (!button) {
+          return;
+        }
+
+        const action = button.dataset.action;
+        if (action === "add-project") {
+          createProject();
+          return;
+        }
+        if (action === "add-file") {
+          createFile();
+          return;
+        }
+        if (action === "delete-file") {
+          deleteCurrentFile();
+          return;
+        }
+        if (action === "delete-project") {
+          deleteCurrentProject();
+        }
+      });
+
+      projectList.addEventListener("click", (event) => {
+        const deleteButton = event.target.closest("button[data-project-delete]");
+        if (deleteButton) {
+          deleteCurrentProject(deleteButton.dataset.projectDelete);
+          return;
+        }
+
+        const mainButton = event.target.closest("button[data-project-id]");
+        if (!mainButton) {
+          return;
+        }
+        const projectId = mainButton.dataset.projectId;
+        const targetProject = state.workspace.projects.find((project) => project.id === projectId);
+        if (!targetProject) {
+          return;
+        }
+        setActiveFile(targetProject.id, targetProject.files[0]?.id, { silent: true });
+      });
+
+      fileList.addEventListener("click", (event) => {
+        const deleteButton = event.target.closest("button[data-file-delete]");
+        if (deleteButton) {
+          deleteCurrentFile(deleteButton.dataset.fileDelete);
+          return;
+        }
+
+        const mainButton = event.target.closest("button[data-file-id]");
+        if (!mainButton) {
+          return;
+        }
+        const activeProject = getActiveProject();
+        if (!activeProject) {
+          return;
+        }
+        setActiveFile(activeProject.id, mainButton.dataset.fileId, { silent: true });
+      });
+
+      entryContainer.addEventListener("click", (event) => {
+        const entryButton = event.target.closest("button[data-entry-action]");
+        const itemButton = event.target.closest("button[data-item-action]");
+
+        if (entryButton) {
+          const entryRoot = entryButton.closest(".entry");
+          const entryId = entryRoot?.id;
+          if (!entryId) {
+            return;
+          }
+
+          const entriesData = captureEntriesState();
+          const entryIndex = entriesData.findIndex((entry) => entry.id === entryId);
+          const entryData = entriesData[entryIndex];
+          if (entryIndex === -1 || !entryData) {
+            return;
+          }
+
+          switch (entryButton.dataset.entryAction) {
+            case "toggle-collapse":
+              entryData.collapsed = !entryData.collapsed;
+              rebuildFromData(entriesData, { preserveFilter: true });
+              markDirty("折叠状态已修改，系统将自动保存。");
+              scheduleAutoSave();
+              return;
+            case "add-item":
+              entryData.items.push(createDefaultItem());
+              rebuildFromData(entriesData, {
+                preserveFilter: true,
+                focus: {
+                  entryId,
+                  type: "item",
+                  path: `${entryData.items.length - 1}`,
+                  selectAll: true,
+                },
+              });
+              markDirty("已新增要点，直接输入即可替换占位文本。");
+              scheduleAutoSave();
+              return;
+            case "add-entry-after": {
+              const newEntry = createDefaultEntry();
+              entriesData.splice(entryIndex + 1, 0, newEntry);
+              rebuildFromData(entriesData, {
+                preserveFilter: true,
+                focus: { entryId: newEntry.id, type: "date", selectAll: true },
+              });
+              markDirty("已插入新的记录节点，直接输入即可替换占位文本。");
+              scheduleAutoSave();
+              return;
+            }
+            case "delete-entry": {
+              const confirmed = window.confirm("确认删除这条记录吗？");
+              if (!confirmed) {
+                return;
+              }
+              entriesData.splice(entryIndex, 1);
+              if (!entriesData.length) {
+                entriesData.push(createDefaultEntry());
+              }
+              rebuildFromData(entriesData, { preserveFilter: true });
+              markDirty("已删除记录节点。");
+              scheduleAutoSave();
+              return;
+            }
+            default:
+              return;
+          }
+        }
+
+        if (itemButton) {
+          const entryRoot = itemButton.closest(".entry");
+          const itemRoot = itemButton.closest("[data-item-path]");
+          const entryId = entryRoot?.id;
+          const itemPath = itemRoot?.dataset.itemPath;
+          if (!entryId || typeof itemPath !== "string") {
+            return;
+          }
+
+          if (itemButton.dataset.itemAction === "add-sibling") {
+            insertRelativeItem(entryId, itemPath, "sibling");
+            return;
+          }
+
+          if (itemButton.dataset.itemAction === "add-child") {
+            insertRelativeItem(entryId, itemPath, "child");
+            return;
+          }
+
+          const entriesData = captureEntriesState();
+          const entryData = entriesData.find((entry) => entry.id === entryId);
+          if (!entryData) {
+            return;
+          }
+
+          const path = itemPath.split(".").filter(Boolean).map(Number);
+          const { parentArray, item, index } = resolveItemLocation(entryData.items, path);
+          if (!parentArray || !item || index < 0) {
+            return;
+          }
+
+          switch (itemButton.dataset.itemAction) {
+            case "delete-item": {
+              const confirmed = window.confirm("确认删除这条要点吗？");
+              if (!confirmed) {
+                return;
+              }
+              parentArray.splice(index, 1);
+              rebuildFromData(entriesData, { preserveFilter: true });
+              markDirty("已删除要点。");
+              scheduleAutoSave();
+              return;
+            }
+            default:
+              return;
+          }
+        }
+      });
+
+      searchInput.addEventListener("input", (event) => {
+        scheduleSearchInputRefresh(event.target.value);
+      });
+
+      document.addEventListener("input", (event) => {
+        if (event.target === searchInput) {
+          return;
+        }
+
+        const editableTarget = event.target.closest(".editable-node");
+        if (!editableTarget) {
+          return;
+        }
+
+        if (editableTarget === staticRefs.title) {
+          const activeFile = getActiveFile();
+          if (activeFile) {
+            activeFile.name = htmlToText(staticRefs.title.innerHTML) || activeFile.name;
+            renderFileList();
+            updateWorkspaceChrome();
+          }
+        }
+
+        if (editableTarget.matches("h3")) {
+          if (state.activeFilter) {
+            requestFilterRefresh();
+          } else {
+            requestDerivedStatsRefresh();
+          }
+        } else if (state.activeFilter) {
+          requestFilterRefresh();
+        }
+        markDirty();
+        scheduleAutoSave();
+      });
+
+      window.addEventListener("beforeunload", (event) => {
+        if (!state.isDirty) {
+          return;
+        }
+        event.preventDefault();
+        event.returnValue = "";
+      });
+
+      document.addEventListener("keydown", (event) => {
+        const lowerKey = event.key.toLowerCase();
+        if ((event.ctrlKey || event.metaKey) && lowerKey === "s") {
+          event.preventDefault();
+          saveDraft("manual");
+        }
+
+        if (
+          state.isEditing
+          && event.key === "Enter"
+          && !event.isComposing
+          && !event.shiftKey
+          && event.target.closest(".item-content")
+        ) {
+          const entryRoot = event.target.closest(".entry");
+          const itemRoot = event.target.closest("[data-item-path]");
+          const entryId = entryRoot?.id;
+          const itemPath = itemRoot?.dataset.itemPath;
+          if (entryId && itemPath) {
+            event.preventDefault();
+            insertRelativeItem(entryId, itemPath, "sibling");
+            return;
+          }
+        }
+
+        if (event.key === "Escape" && state.isEditing) {
+          setEditing(false);
+        }
+      });
+
+      if (workspaceBootstrap.restoredFromStorage) {
+        setStatus("已自动恢复本地工作区。", "success");
+      } else {
+        updateWorkspaceChrome();
+        setStatus("查看模式", "info");
+      }
+
+      updateButtons();
+      requestScrollUpdate();
+    })();
+  </script>
+</body>
+</html>
